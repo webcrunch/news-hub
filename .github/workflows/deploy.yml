@@ -82,7 +82,7 @@ jobs:
                   source: "docker-compose.prod.yml"
                   target: "/home/${{ env.SERVER_USER }}/repos/news-hub"
 
-            # Logga in via SSH, dra ner den nya imagen och starta om via Traefik
+            # Logga in via SSH, logga in på Docker Hub, dra ner bilden och starta om via Traefik
             - name: Execute Deploy Commands
               uses: appleboy/ssh-action@master
               with:
@@ -90,7 +90,18 @@ jobs:
                   username: ${{ env.SERVER_USER }}
                   key: ${{ env.SSH_PRIVATE_KEY }}
                   port: ${{ env.SERVER_PORT }}
+                  envs: DOCKER_USERNAME,DOCKER_PASSWORD
                   script: |
                       cd /home/${{ env.SERVER_USER }}/repos/news-hub
+
+                      # Autentisera din VPS mot Docker Hub med dina Vault-uppgifter
+                      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+                      # Hämta den privata bilden helt säkert
                       docker compose -f docker-compose.prod.yml pull
+
+                      # Starta om containern bakom Traefik
                       docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+                      # Logga ut från Docker Hub på VPS:en för ökad säkerhet
+                      docker logout
