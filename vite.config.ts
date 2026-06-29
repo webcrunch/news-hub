@@ -8,6 +8,7 @@ export default defineConfig({
     solidPlugin(),
   ],
   server: {
+    base: '/news/',
     port: 3000,
   },
 });
