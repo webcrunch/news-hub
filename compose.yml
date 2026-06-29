@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  news-hub:
+    build:
+      context: .
+      target: build
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules # Förhindrar att lokala node_modules skriver över containerns
+    environment:
+      - NODE_ENV=development
+    command: npm run dev -- --host

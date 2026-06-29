@@ -1,0 +1,96 @@
+name: Build and Deploy NewsHub
+
+on:
+    push:
+        branches: ["main"]
+
+jobs:
+    # JOBB 1: Bygg appen (Node 24 + Tailwind v4) och pusha imagen till Docker Hub
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            # Hämta Docker-hemligheter från din Vault
+            - name: Import Secrets from Vault
+              uses: hashicorp/vault-action@v3
+              with:
+                  url: https://vault.jarllindquist.com
+                  method: approle
+                  roleId: ${{ secrets.VAULT_ROLE_ID }}
+                  secretId: ${{ secrets.VAULT_SECRET_ID }}
+                  secrets: |
+                      kv/data/server-deploy DOCKER_USERNAME | DOCKER_USERNAME ;
+                      kv/data/server-deploy DOCKER_PASSWORD | DOCKER_PASSWORD
+
+            - name: Log in to Docker Hub
+              uses: docker/login-action@v3
+              with:
+                  username: ${{ env.DOCKER_USERNAME }}
+                  password: ${{ env.DOCKER_PASSWORD }}
+
+            - name: Build and push Docker image
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  target: production
+                  push: true
+                  tags: ${{ env.DOCKER_USERNAME }}/news-hub:latest
+
+    # JOBB 2: Deploya till din Ubuntu-VPS
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            # Hämta Server-hemligheter från din Vault
+            - name: Import Secrets from Vault
+              uses: hashicorp/vault-action@v3
+              with:
+                  url: https://vault.jarllindquist.com
+                  method: approle
+                  roleId: ${{ secrets.VAULT_ROLE_ID }}
+                  secretId: ${{ secrets.VAULT_SECRET_ID }}
+                  secrets: |
+                      kv/data/server-deploy SSH_HOST | SERVER_HOST ;
+                      kv/data/server-deploy SSH_USERNAME | SERVER_USER ;
+                      kv/data/server-deploy SERVER_PORT | SERVER_PORT ;
+                      kv/data/server-deploy SSH_PRIVATE_KEY | SSH_PRIVATE_KEY
+
+            # Skapa mappen på servern om den inte finns
+            - name: Create target directory on VPS
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ env.SERVER_HOST }}
+                  username: ${{ env.SERVER_USER }}
+                  key: ${{ env.SSH_PRIVATE_KEY }}
+                  port: ${{ env.SERVER_PORT }}
+                  script: |
+                      mkdir -p /home/${{ env.SERVER_USER }}/repos/news-hub
+
+            # Kopiera docker-compose.prod.yml till servern
+            - name: Copy docker-compose files to VPS
+              uses: appleboy/scp-action@master
+              with:
+                  host: ${{ env.SERVER_HOST }}
+                  username: ${{ env.SERVER_USER }}
+                  key: ${{ env.SSH_PRIVATE_KEY }}
+                  port: ${{ env.SERVER_PORT }}
+                  source: "docker-compose.prod.yml"
+                  target: "/home/${{ env.SERVER_USER }}/repos/news-hub"
+
+            # Logga in via SSH, dra ner den nya imagen och starta om via Traefik
+            - name: Execute Deploy Commands
+              uses: appleboy/ssh-action@master
+              with:
+                  host: ${{ env.SERVER_HOST }}
+                  username: ${{ env.SERVER_USER }}
+                  key: ${{ env.SSH_PRIVATE_KEY }}
+                  port: ${{ env.SERVER_PORT }}
+                  script: |
+                      cd /home/${{ env.SERVER_USER }}/repos/news-hub
+                      docker compose -f docker-compose.prod.yml pull
+                      docker compose -f docker-compose.prod.yml up -d --remove-orphans
