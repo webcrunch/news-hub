@@ -1,6 +1,5 @@
 services:
   news-hub-prod:
-    # ÄNDRAT: Ändra från ghcr.io till ditt Docker Hub-namn (webcrunch eller jarl-lindquist, det som dras från Vault)
     image: webcrunch/news-hub:latest
     container_name: news-hub-production
     restart: always
@@ -10,14 +9,13 @@ services:
       - traefik-net
     labels:
       - "traefik.enable=true"
+
       # --- ROUTING ---
       - "traefik.http.routers.newshub.rule=Host(`jarllindquist.com`) && PathPrefix(`/news`)"
       - "traefik.http.routers.newshub.entrypoints=websecure"
       - "traefik.http.routers.newshub.tls.certresolver=myresolver"
       - "traefik.http.routers.newshub.priority=10"
-      # --- MIDDLEWARES ---
-      - "traefik.http.middlewares.newshub-strip.stripprefix.prefixes=/news"
-      - "traefik.http.routers.newshub.middlewares=newshub-strip"
+
       # --- SERVICE ---
       - "traefik.http.services.newshub.loadbalancer.server.port=80"
 
