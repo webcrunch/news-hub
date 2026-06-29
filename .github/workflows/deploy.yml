@@ -92,7 +92,7 @@ jobs:
                   port: ${{ env.SERVER_PORT }}
                   envs: DOCKER_USERNAME,DOCKER_PASSWORD
                   script: |
-                      cd /home/${{ env.SERVER_USER }}/repos/news-hub
+                      cd /home/repos/news-hub
 
                       # Autentisera din VPS mot Docker Hub med dina Vault-uppgifter
                       echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
