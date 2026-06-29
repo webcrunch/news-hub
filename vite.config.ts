@@ -3,12 +3,12 @@ import solidPlugin from 'vite-plugin-solid';
 import tailwindcss from '@tailwindcss/vite'; // <-- Lägg till denna
 
 export default defineConfig({
+  base: '/news/',
   plugins: [
     tailwindcss(), // <-- Lägg till denna FÖRE solidPlugin
     solidPlugin(),
   ],
   server: {
-    base: '/news/',
     port: 3000,
   },
 });
