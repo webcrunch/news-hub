@@ -1,8 +1,7 @@
-version: "3.8"
-
 services:
   news-hub-prod:
-    image: ghcr.io/jarl-lindquist/news-hub:latest # Byt ut till din exakta GHCR-sökväg efter bygget
+    # ÄNDRAT: Ändra från ghcr.io till ditt Docker Hub-namn (webcrunch eller jarl-lindquist, det som dras från Vault)
+    image: webcrunch/news-hub:latest
     container_name: news-hub-production
     restart: always
     environment:
@@ -11,19 +10,14 @@ services:
       - traefik-net
     labels:
       - "traefik.enable=true"
-
       # --- ROUTING ---
-      # Fångar allt som går till jarllindquist.com/news
       - "traefik.http.routers.newshub.rule=Host(`jarllindquist.com`) && PathPrefix(`/news`)"
       - "traefik.http.routers.newshub.entrypoints=websecure"
       - "traefik.http.routers.newshub.tls.certresolver=myresolver"
-      - "traefik.http.routers.newshub.priority=10" # Högre prioritet än svelte-app (1) så denna nyper först!
-
+      - "traefik.http.routers.newshub.priority=10"
       # --- MIDDLEWARES ---
-      # Strippa bort /news innan paketet skickas till Nginx-containern
       - "traefik.http.middlewares.newshub-strip.stripprefix.prefixes=/news"
       - "traefik.http.routers.newshub.middlewares=newshub-strip"
-
       # --- SERVICE ---
       - "traefik.http.services.newshub.loadbalancer.server.port=80"
 
