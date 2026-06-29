@@ -1,6 +1,6 @@
-import { Article } from "./types";
+import type { Article } from "./types.tsx";
 
-export const mockArticles: any[] = [
+export const mockArticles: Article[] = [ // <-- Ändra här från any[] till Article[]
     {
         "id": 1474,
         "url": "https://app.daily.dev/posts/dSvHbLAq3?utm_source=notification&utm_medium=email&utm_campaign=digest",
