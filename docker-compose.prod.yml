@@ -1,6 +1,6 @@
 services:
   news-hub-prod:
-    image: webcrunch/news-hub:latest
+    image: passwordnotsafe/news-hub:latest
     container_name: news-hub-production
     restart: always
     environment:
