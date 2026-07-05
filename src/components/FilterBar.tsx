@@ -12,6 +12,9 @@ interface FilterBarProps {
     sortOrder: string;
     setSortOrder: (value: string) => void;
 }
+// const sortedArticles = articles.sort((a, b) =>
+//     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+// );
 
 const FilterBar: Component<FilterBarProps> = (props) => {
     return (

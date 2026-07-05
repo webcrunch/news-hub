@@ -1,77 +1,84 @@
-import { createSignal, createMemo, onMount, For } from "solid-js";
+import { createSignal, createMemo, createEffect, onMount, For, Show } from "solid-js";
 import ArticleCard from "./components/ArticleCard";
 import FilterBar from "./components/FilterBar";
-
 import type { Article } from "./types";
-// Mock-datan (enkel definition, rensad från dubbletter)
-const mockArticles: any[] = [
-  {
-    "id": 1474,
-    "url": "https://app.daily.dev/posts/dSvHbLAq3?utm_source=notification&utm_medium=email&utm_campaign=digest",
-    "title": "Who said Bun ??? :-)\n\nI found a prototype pollution vulnerability in the server-side JavaScript runtime Bun. The security vulnerability is now addressed and fixed by Jarred Sumner and the Bun team through a newly released version of Bun. Curious to learn more about the vulnerability and how it was fixed? Read on.",
-    "author": "Node.js developers",
-    "summary": "* En prototypeföroreningssvårighet upptäcktes i server-sidens JavaScript-ramverk Bun.\n* Själva svårlösningen av föroreningar i prototypen kan leda till oavsiktlig ändring av programmet.\n* Prototypförorening är ett särskilt säkerhetsproblem i JavaScript där attacker kan ändra den övergripande prototypen, vilket kan resultera i felaktig programanvändning.\n* Själva svårlösningen av föroreningar i prototypen har utförts av Jarred Sumner och Bun-teamet genom en ny releaseversion av Bun (1.1.30).",
-    "sender": "{\"{\\\"address\\\":\\\"informer@daily.dev\\\",\\\"name\\\":\\\"daily.dev\\\"}\"}",
-    "created_at": "2026-06-28T14:40:57.203Z"
-  },
-  {
-    "id": 2,
-    "url": "https://app.daily.dev/em/t/c?r=%2Fposts%2FcoqLi3SH8%3Futm_source%3Dnotification%26utm_medium%3Demail%26utm_campaign%3Ddigest&link_id=CIO--LINKID",
-    "title": "Shai-Hulud Reaches PyPI: The Hades Wave That Runs Before You Import It",
-    "author": "Bobby Iliev",
-    "summary": "* Shai-Hulud worm har nått PyPI med Hades-branchen.\n* Malicious code hittas i 37 wheel-artefakter och 19 Python-paket.\n* Hades använder en .pth startup hook för att köra automatiskt vid tolkningsstart, utan behov av import.\n* Payload laddar ned Bun runtime och kör ett obfuscerat JavaScript-stealer som ransakar GitHub-tokens, PyPI/npm-publikationskreditorer, AWS/GCP/Azure/Kubernetes-geheimlösa data, SSH-lägenheter och AI-verktygskonfigurationer.\n* Stulna data skickas till attacker-skapade offentliga GitHub-repo.",
-    "sender": "tldr",
-    "created_at": "2026-06-09T08:26:31.584Z"
-  },
-  {
-    "id": 24,
-    "url": "https://app.daily.dev/posts/l8v6L9b1l?utm_source=notification&utm_medium=email&utm_campaign=digest",
-    "title": "Stop Chasing Hype: Why I Chose Postgres Over ‘New-Age’ Databases",
-    "author": "Ruby Flow",
-    "summary": "• Författaren diskuterar favoriseringen av PostgreSQL som standarddatabas i stället för \"nya-trender\"-databaser.\n• Vissa av fördelarna med PostgreSQL är sin flexibilitet (JSONB, fulltext sökning, pgvector och key-value lagring).\n• Databasen uppfyller ACID-kompatibilitetskraven.\n• Postgres har ett stort ekosystem som bidrar till dess popularitet.\n• Rails 8:s 'Solid' rörelsen (Solid Queue, Solid Cache, Solid Cable) visar på Postgres potential att ersätta Redis och andra externa avhängigheter, vilket reducerar infrastruktursammanhanget till bara Linux + Postgres.",
-    "sender": "bruno",
-    "created_at": "2026-06-09T09:47:40.813Z"
-  }
-];
-
-function transformArticles(rawArticles: any[]): Article[] {
-  return rawArticles.map(article => {
-    const cleanTitle = article.title?.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-
-    let cleanSender = 'daily.dev';
-    try {
-      if (typeof article.sender === 'string') {
-        const cleanJsonStr = article.sender.replace(/^"{|}"$/g, '').replace(/\\"/g, '"');
-        const parsed = JSON.parse(cleanJsonStr);
-        cleanSender = parsed.name || parsed.address || 'daily.dev';
-      }
-    } catch (e) {
-      if (article.sender?.includes('tldr')) cleanSender = 'TLDR';
-      else if (article.sender?.includes('bruno')) cleanSender = 'Bruno';
-    }
-
-    return {
-      ...article,
-      title: cleanTitle,
-      sender: cleanSender
-    };
-  });
-}
 
 function App() {
-  const [rawArticles, setRawArticles] = createSignal<Article[]>([]);
+  const [articles, setArticles] = createSignal<Article[]>([]);
   const [searchTerm, setSearchTerm] = createSignal("");
   const [activeSender, setActiveSender] = createSignal("Alla");
   const [sortBy, setSortBy] = createSignal("created_at");
   const [sortOrder, setSortOrder] = createSignal("desc");
 
-  // Ändrad onMount: Vi läser direkt från mockArticles istället för fetch så länge!
-  onMount(() => {
-    setRawArticles(transformArticles(mockArticles));
+  // Paginering
+  const [currentPage, setCurrentPage] = createSignal(1);
+  const itemsPerPage = 5;
+
+  // Återställ till sida 1 när sökning eller filter ändras
+  createEffect(() => {
+    searchTerm();
+    activeSender();
+    sortBy();
+    sortOrder();
+    setCurrentPage(1);
+  });
+
+  function cleanSenderField(senderRaw: any): string {
+    if (!senderRaw) return "daily.dev";
+
+    if (typeof senderRaw === "object") {
+      return senderRaw.name || senderRaw.address || "daily.dev";
+    }
+
+    const str = String(senderRaw).trim();
+
+    if (!str.startsWith("{") && !str.startsWith('"{')) {
+      if (str.includes("informer@daily.dev")) return "daily.dev";
+      return str;
+    }
+
+    try {
+      const parsed = JSON.parse(str);
+      if (typeof parsed === "object" && parsed !== null) {
+        return parsed.name || parsed.address || "daily.dev";
+      }
+
+      if (typeof parsed === "string") {
+        const doubleParsed = JSON.parse(parsed);
+        return doubleParsed.name || doubleParsed.address || "daily.dev";
+      }
+    } catch (e) {
+      const nameMatch = str.match(/"name"\s*:\s*"([^"]+)"/);
+      if (nameMatch) return nameMatch[1];
+
+      const addressMatch = str.match(/"address"\s*:\s*"([^"]+)"/);
+      if (addressMatch && addressMatch[1].includes("daily.dev")) return "daily.dev";
+    }
+
+    return "daily.dev";
+  }
+
+  onMount(async () => {
+    try {
+      const limit = 100;
+      const offset = 0;
+      const res = await fetch(`https://jarllindquist.com/n8n/webhook/043557d6-47e3-4f61-94f2-11ffcf2c8fa9/news/all/${limit}/${offset}`);
+      const data = await res.json();
+
+      const cleanArticles = data.map((article: any) => ({
+        ...article,
+        sender: cleanSenderField(article.sender)
+      }));
+
+      setArticles(cleanArticles);
+      console.log("Antal artiklar laddade:", data.length);
+    } catch (error) {
+      console.error("Kunde inte hämta nyheter:", error);
+    }
   });
 
   const filteredArticles = createMemo(() => {
-    return rawArticles()
+    return articles()
       .filter(article => {
         if (activeSender() !== "Alla" && article.sender !== activeSender()) return false;
 
@@ -100,7 +107,14 @@ function App() {
       });
   });
 
-  const senders = createMemo(() => ["Alla", ...new Set(rawArticles().map(a => a.sender))]);
+  const paginatedArticles = createMemo(() => {
+    const start = (currentPage() - 1) * itemsPerPage;
+    return filteredArticles().slice(start, start + itemsPerPage);
+  });
+
+  const totalPages = createMemo(() => Math.ceil(filteredArticles().length / itemsPerPage));
+
+  const senders = createMemo(() => ["Alla", ...new Set(articles().map(a => a.sender))]);
 
   return (
     <div class="min-h-screen bg-slate-50 text-slate-900">
@@ -108,31 +122,68 @@ function App() {
         <h1 class="text-xl font-bold tracking-tight text-slate-800">📰 NewsHub Reader</h1>
       </header>
 
-      <div class="flex gap-8 max-w-[1400px] mx-auto p-8">
-        <FilterBar
-          senders={senders()}
-          searchTerm={searchTerm()}
-          setSearchTerm={setSearchTerm}
-          activeSender={activeSender()}
-          setActiveSender={setActiveSender}
-          sortBy={sortBy()}
-          setSortBy={setSortBy}
-          sortOrder={sortOrder()}
-          setSortOrder={setSortOrder}
-        />
+      <div class="flex flex-col md:flex-row gap-8 max-w-[1600px] mx-auto p-6 md:p-8">
 
-        <main class="flex-1 flex flex-col gap-4">
-          <div class="text-sm text-slate-500 font-medium mb-2">
-            {/* 1. ÄNDRAT: Lägg till () här */}
-            Visar {filteredArticles().length} av {rawArticles().length} artiklar
+        {/* SIDOMENYN: Ökad från w-64 till w-80 för att förhindra krockar */}
+        <div class="w-full md:w-80 shrink-0">
+          <FilterBar
+            senders={senders()}
+            searchTerm={searchTerm()}
+            setSearchTerm={setSearchTerm}
+            activeSender={activeSender()}
+            setActiveSender={setActiveSender}
+            sortBy={sortBy()}
+            setSortBy={setSortBy}
+            sortOrder={sortOrder()}
+            setSortOrder={setSortOrder}
+          />
+        </div>
+
+        {/* HUVUDDELEN */}
+        <main class="flex-1 flex flex-col gap-6 min-w-0">
+          <div class="text-sm text-slate-500 font-medium">
+            {filteredArticles().length > 0
+              ? `Visar ${(currentPage() - 1) * itemsPerPage + 1}–${Math.min(currentPage() * itemsPerPage, filteredArticles().length)} av ${filteredArticles().length} artiklar`
+              : "Inga artiklar hittades"}
           </div>
 
-          <div class="flex flex-col gap-4">
-            {/* 2. ÄNDRAT: Lägg till () i din each-prop här */}
-            <For each={filteredArticles()}>
+          {/* RUTNÄT: 1 kolumn på mobil/mindre skärm, 2 på laptop (lg), 3 på stor extern skärm (xl) */}
+          <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <For each={paginatedArticles()}>
               {(article) => <ArticleCard article={article} />}
             </For>
           </div>
+
+          {/* Pagineringskontroller */}
+          <Show when={totalPages() > 1}>
+            <div class="flex items-center justify-between border-t border-slate-200 pt-6 mt-2">
+              <button
+                onClick={() => {
+                  setCurrentPage(p => Math.max(1, p - 1));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                disabled={currentPage() === 1}
+                class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                ← Föregående
+              </button>
+
+              <span class="text-sm font-medium text-slate-600">
+                Sida <span class="font-bold text-slate-900">{currentPage()}</span> av <span class="font-bold text-slate-900">{totalPages()}</span>
+              </span>
+
+              <button
+                onClick={() => {
+                  setCurrentPage(p => Math.min(totalPages(), p + 1));
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                disabled={currentPage() === totalPages()}
+                class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                Nästa →
+              </button>
+            </div>
+          </Show>
         </main>
       </div>
     </div>

@@ -6,7 +6,6 @@ interface ArticleCardProps {
 }
 
 const ArticleCard: Component<ArticleCardProps> = (props) => {
-    // Dela upp sammanfattningen på radbrytningar och städa bort punkter
     const getSummaryPoints = (summaryText: string): string[] => {
         if (!summaryText) return [];
         return summaryText
@@ -15,8 +14,9 @@ const ArticleCard: Component<ArticleCardProps> = (props) => {
             .filter(point => point.length > 0);
     };
 
-    // Dynamisk färg baserad på nyhetsbrev
-    const getBadgeColor = (sender: string) => {
+    const getBadgeColor = (sender: string | undefined) => {
+        if (!sender) return "bg-gray-100 text-gray-800 border-gray-200";
+
         switch (sender.toLowerCase()) {
             case "daily.dev": return "bg-purple-100 text-purple-800 border-purple-200";
             case "tldr": return "bg-orange-100 text-orange-800 border-orange-200";
@@ -26,35 +26,39 @@ const ArticleCard: Component<ArticleCardProps> = (props) => {
     };
 
     return (
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200">
-            <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-                <div class="flex items-center gap-3">
-                    <span class={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getBadgeColor(props.article.sender)}`}>
-                        {props.article.sender}
-                    </span>
-                    <span class="text-sm text-slate-500 font-medium">
-                        av {props.article.author || "Okänd"}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200 flex flex-col justify-between h-full">
+            <div>
+                <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+                    <div class="flex items-center gap-3">
+                        <span class={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getBadgeColor(props.article.sender || "Okänd")}`}>
+                            {props.article.sender || "Okänd"}
+                        </span>
+                        <span class="text-sm text-slate-500 font-medium">
+                            av {props.article.author || "Okänd"}
+                        </span>
+                    </div>
+                    <span class="text-xs text-slate-400">
+                        {new Date(props.article.created_at).toLocaleDateString('sv-SE')}
                     </span>
                 </div>
-                <span class="text-xs text-slate-400">
-                    {new Date(props.article.created_at).toLocaleDateString('sv-SE')}
-                </span>
+
+                <div class="article-card mb-4">
+                    <h2 class="text-lg font-bold text-slate-800 mb-2 leading-snug">{props.article.title}</h2>
+                    <span class="date block text-xs text-slate-400 mb-2">{props.article.displayDate}</span>
+                    <p class="text-sm text-slate-600 mb-3">{props.article.summary}</p>
+                </div>
+
+                <ul class="space-y-1.5 mb-6">
+                    {getSummaryPoints(props.article.summary).map((point) => (
+                        <li class="text-sm text-slate-600 flex items-start gap-2 leading-relaxed">
+                            <span class="text-blue-500 select-none mt-1 text-xs">◆</span>
+                            <span>{point}</span>
+                        </li>
+                    ))}
+                </ul>
             </div>
 
-            <h3 class="text-lg font-bold text-slate-900 mb-2 leading-snug">
-                {props.article.title}
-            </h3>
-
-            <ul class="space-y-1.5 mb-4">
-                {getSummaryPoints(props.article.summary).map((point) => (
-                    <li class="text-sm text-slate-600 flex items-start gap-2 leading-relaxed">
-                        <span class="text-blue-500 select-none mt-1 text-xs">◆</span>
-                        <span>{point}</span>
-                    </li>
-                ))}
-            </ul>
-
-            <div class="flex justify-end">
+            <div class="flex justify-end pt-4 border-t border-slate-100 mt-auto">
                 <a
                     href={props.article.url}
                     target="_blank"
