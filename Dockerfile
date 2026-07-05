@@ -1,21 +1,21 @@
 # Step 1: Build stage
 FROM node:24-alpine AS build
 WORKDIR /app
+
+# Kopiera package.json (och package-lock.json om den finns)
 COPY package*.json ./
-RUN npm ci
+
+# ÄNDRING HÄR: Använd vanliga install istället för ci. 
+# Då installerar Node exakt de @emnapi-paket som behövs för Alpine Linux!
+RUN npm install
+
 COPY . .
 RUN npm run build
 
 # Step 2: Production stage
 FROM nginx:stable-alpine AS production
-
-# Rensa bort Nginx standard-sidor (så att "Welcome to nginx!" försvinner för alltid)
 RUN rm -rf /usr/share/nginx/html/*
-
-# Kopiera dina byggda filer direkt till Nginxs rotkatalog
 COPY --from=build /app/dist /usr/share/nginx/html
-
-# Kopiera din custom nginx.conf till containern
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
