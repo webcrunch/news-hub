@@ -46,7 +46,7 @@ jobs:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            # Hämta Server-hemligheter från din Vault
+            # FIX: Hämta både Server- OCH Docker-hemligheter från Vault till detta jobb
             - name: Import Secrets from Vault
               uses: hashicorp/vault-action@v3
               with:
@@ -58,9 +58,11 @@ jobs:
                       kv/data/server-deploy SSH_HOST | SERVER_HOST ;
                       kv/data/server-deploy SSH_USERNAME | SERVER_USER ;
                       kv/data/server-deploy SERVER_PORT | SERVER_PORT ;
-                      kv/data/server-deploy SSH_PRIVATE_KEY | SSH_PRIVATE_KEY
+                      kv/data/server-deploy SSH_PRIVATE_KEY | SSH_PRIVATE_KEY ;
+                      kv/data/server-deploy DOCKER_USERNAME | DOCKER_USERNAME ;
+                      kv/data/server-deploy DOCKER_PASSWORD | DOCKER_PASSWORD
 
-            # Skapa mappen på servern om den inte finns
+            # FIX: Hårdkoda sökvägen till exakt /home/repos/news-hub
             - name: Create target directory on VPS
               uses: appleboy/ssh-action@master
               with:
@@ -69,9 +71,9 @@ jobs:
                   key: ${{ env.SSH_PRIVATE_KEY }}
                   port: ${{ env.SERVER_PORT }}
                   script: |
-                      mkdir -p /home/${{ env.SERVER_USER }}/repos/news-hub
+                      mkdir -p /home/repos/news-hub
 
-            # Kopiera docker-compose.prod.yml till servern
+            # FIX: Kopiera docker-compose.prod.yml till exakt /home/repos/news-hub
             - name: Copy docker-compose files to VPS
               uses: appleboy/scp-action@master
               with:
@@ -80,7 +82,7 @@ jobs:
                   key: ${{ env.SSH_PRIVATE_KEY }}
                   port: ${{ env.SERVER_PORT }}
                   source: "docker-compose.prod.yml"
-                  target: "/home/${{ env.SERVER_USER }}/repos/news-hub"
+                  target: "/home/repos/news-hub"
 
             # Logga in via SSH, logga in på Docker Hub, dra ner bilden och starta om via Traefik
             - name: Execute Deploy Commands
@@ -97,11 +99,14 @@ jobs:
                       # Autentisera din VPS mot Docker Hub med dina Vault-uppgifter
                       echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
-                      # Hämta den privata bilden helt säkert
+                      # Hämta den senaste bilden
                       docker compose -f docker-compose.prod.yml pull
 
-                      # Starta om containern bakom Traefik
-                      docker compose -f docker-compose.prod.yml up -d --remove-orphans
+                      # Starta om containern (--force-recreate tvingar fram att den nyss nedladdade bilden används)
+                      docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+                      # Rensa bort gamla oanvända docker-avbildningar så inte harddisken fylls upp
+                      docker image prune -f
 
                       # Logga ut från Docker Hub på VPS:en för ökad säkerhet
                       docker logout
