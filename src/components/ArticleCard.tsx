@@ -30,12 +30,13 @@ const ArticleCard: Component<ArticleCardProps> = (props) => {
             <div>
                 <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
                     <div class="flex items-center gap-3">
+                        {/* <span class="text-sm text-slate-500 font-medium">
+                            {props.article.author || "Okänd"}
+                        </span> */}
                         <span class={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getBadgeColor(props.article.sender || "Okänd")}`}>
                             {props.article.sender || "Okänd"}
                         </span>
-                        <span class="text-sm text-slate-500 font-medium">
-                            av {props.article.author || "Okänd"}
-                        </span>
+
                     </div>
                     <span class="text-xs text-slate-400">
                         {new Date(props.article.created_at).toLocaleDateString('sv-SE')}
@@ -43,7 +44,11 @@ const ArticleCard: Component<ArticleCardProps> = (props) => {
                 </div>
 
                 <div class="article-card mb-4">
-                    <h2 class="text-lg font-bold text-slate-800 mb-2 leading-snug">{props.article.title}</h2>
+                    <h2 style="color: #000000;" class="text-lg font-bold mb-2 leading-tight tracking-tight">
+                        {props.article.title}
+                    </h2>
+                    <br />
+                    <br />
                     <span class="date block text-xs text-slate-400 mb-2">{props.article.displayDate}</span>
                     <p class="text-sm text-slate-600 mb-3">{props.article.summary}</p>
                 </div>
