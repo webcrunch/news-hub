@@ -24,6 +24,11 @@ function App() {
   });
 
   function cleanSenderField(senderRaw: any): string {
+    // checks if there is any "" in the beginign and end and remove them. 
+    const regex = /^[^"\r\n]*"|"[^"\r\n]*$/g;
+    senderRaw = senderRaw.replace(regex, '');
+
+
     if (!senderRaw) return "daily.dev";
 
     if (typeof senderRaw === "object") {
@@ -62,16 +67,24 @@ function App() {
     try {
       const limit = 100;
       const offset = 0;
-      const res = await fetch(`https://jarllindquist.com/n8n/webhook/043557d6-47e3-4f61-94f2-11ffcf2c8fa9/news/all/${limit}/${offset}`);
-      const data = await res.json();
+      const url = `https://jarllindquist.com/n8n/webhook/043557d6-47e3-4f61-94f2-11ffcf2c8fa9/news/all/${limit}/${offset}`;
+      const res = await fetch(url);
 
+      // LOGGA STATUSKODEN - hantera detta till vår logg funktion senare i så fall.
+      // console.log("Statuskod:", res.status);
+
+      // Läs som text istället för JSON först
+      const rawText = await res.text();
+
+      if (!res.ok) throw new Error(`Serverfel: ${res.status}`);
+      if (!rawText.trim()) throw new Error("Servern svarade med tom kropp");
+
+      const data = JSON.parse(rawText);
       const cleanArticles = data.map((article: any) => ({
         ...article,
         sender: cleanSenderField(article.sender)
       }));
-
       setArticles(cleanArticles);
-      console.log("Antal artiklar laddade:", data.length);
     } catch (error) {
       console.error("Kunde inte hämta nyheter:", error);
     }
@@ -80,6 +93,7 @@ function App() {
   const filteredArticles = createMemo(() => {
     return articles()
       .filter(article => {
+        // Behåll filtreringen (sök och sender-filter)
         if (activeSender() !== "Alla" && article.sender !== activeSender()) return false;
 
         if (searchTerm()) {
@@ -91,20 +105,9 @@ function App() {
           );
         }
         return true;
-      })
-      .sort((a, b) => {
-        let valA = a[sortBy() as keyof Article];
-        let valB = b[sortBy() as keyof Article];
-
-        if (sortBy() === "created_at") {
-          valA = new Date(valA as string).getTime();
-          valB = new Date(valB as string).getTime();
-        }
-
-        if (valA < valB) return sortOrder() === "desc" ? 1 : -1;
-        if (valA > valB) return sortOrder() === "desc" ? -1 : 1;
-        return 0;
       });
+    // TA BORT .sort(...) HÄR! 
+    // Låt SQL-frågan stå för ordningen.
   });
 
   const paginatedArticles = createMemo(() => {
