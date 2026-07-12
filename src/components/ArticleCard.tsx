@@ -35,7 +35,8 @@ const ArticleCard: Component<ArticleCardProps> = (props) => {
                             {props.article.author || "Okänd"}
                         </span> */}
                         <span class={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getBadgeColor(props.article.sender || "Okänd")}`}>
-                            {props.article.sender || "Okänd"}
+                            {props.article.sender.split('<')[0] || "Okänd"}
+
                         </span>
 
                     </div>

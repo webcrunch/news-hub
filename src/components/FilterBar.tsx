@@ -16,6 +16,45 @@ interface FilterBarProps {
 //     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
 // );
 
+const getBadgeColor = (sender: string | undefined) => {
+    if (!sender) return "bg-gray-100 text-gray-800 border-gray-200";
+    const s = sender.toLowerCase();
+    if ((s.includes("mira mitchell")) || (s.includes("mira from codeanywhere")) || (s.includes("niko from codeanywhere"))) return "bg-green-100 text-green-800 border-green-200";
+    if (s.includes("daily.dev")) return "bg-purple-100 text-purple-800 border-purple-200";
+    if (s.includes("piotr's techblog")) return "bg-pink-100 text-pink-800 border-black-200";
+    if (s.includes("tldr")) return "bg-orange-100 text-orange-800 border-orange-200";
+    if (s.includes("bruno")) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+
+    return "bg-blue-100 text-blue-800 border-blue-200";
+};
+
+const formatSenderBadge = (sender: any) => {
+    if (!sender) return <span class="text-gray-500">Okänd</span>;
+
+    const parts = sender.split('<');
+    const name = parts[0].trim() || "Okänd";
+    // Plocka ut e-posten om den finns, annars tom sträng
+    const email = parts.length > 1 ? parts[1].replace('>', '').trim() : "";
+
+    return (
+        <div class="mb-4">
+            {/* Själva färg-boxen/pillret med namnet */}
+            <span class={`inline-block px-3 py-1 text-xs font-semibold rounded-full border ${getBadgeColor(sender)}`}>
+                {name}
+            </span>
+
+            {/* E-postadressen på en ny rad under, lite mer diskret */}
+            {email && (
+                <>
+                    <br />
+                    <span class="inline-block mt-1 text-xs text-gray-500">
+                        {email}
+                    </span>
+                </>
+            )}
+        </div>
+    );
+};
 const FilterBar: Component<FilterBarProps> = (props) => {
     return (
         <aside class="w-80 bg-white rounded-xl border border-slate-200 p-6 h-fit shrink-0 shadow-sm flex flex-col gap-6">
@@ -49,12 +88,13 @@ const FilterBar: Component<FilterBarProps> = (props) => {
                         {(sender) => (
                             <button
                                 onClick={() => props.setActiveSender(sender)}
-                                class={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${props.activeSender === sender
+                                class={`w - full text - left px - 3 py - 2 rounded - lg text - sm font - medium transition - colors ${props.activeSender === sender
                                     ? "bg-blue-50 text-blue-600 font-semibold"
                                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                     }`}
                             >
-                                {sender}
+
+                                {formatSenderBadge(sender)}
                             </button>
                         )}
                     </For>
