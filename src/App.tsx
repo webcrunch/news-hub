@@ -1,196 +1,129 @@
-import { createSignal, createMemo, createEffect, onMount, For, Show } from "solid-js";
+import { For, Match, Show, Switch, createEffect, createMemo, createResource, createSignal } from "solid-js";
 import ArticleCard from "./components/ArticleCard";
-import FilterBar from "./components/FilterBar";
+import Toolbar, { type SortKey } from "./components/Toolbar";
+import ThemeToggle from "./components/ThemeToggle";
+import { fetchArticles } from "./api";
+import { SOURCES, sourceByKey } from "./sources";
 import type { Article } from "./types";
 
-function App() {
-  const [articles, setArticles] = createSignal<Article[]>([]);
-  const [searchTerm, setSearchTerm] = createSignal("");
-  const [activeSender, setActiveSender] = createSignal("Alla");
-  const [sortBy, setSortBy] = createSignal("created_at");
-  const [sortOrder, setSortOrder] = createSignal("desc");
+const PAGE = 12;
+const collator = new Intl.Collator("sv");
 
-  // Paginering
-  const [currentPage, setCurrentPage] = createSignal(1);
-  const itemsPerPage = 5;
+function matches(a: Article, q: string): boolean {
+  if (!q) return true;
+  const hay = [a.title, a.summaryText, ...a.summaryPoints, a.sourceLabel].join(" ").toLowerCase();
+  return q.toLowerCase().split(/\s+/).every((word) => hay.includes(word));
+}
 
-  // Återställ till sida 1 när sökning eller filter ändras
+export default function App() {
+  const [articles, { refetch }] = createResource(() => fetchArticles());
+  const [search, setSearch] = createSignal("");
+  const [sort, setSort] = createSignal<SortKey>("newest");
+  const [active, setActive] = createSignal("all");
+  const [shown, setShown] = createSignal(PAGE);
+  // Reading a failed resource throws, so everything else reads through this
+  const list = () => (articles.state === "ready" ? articles() : []);
+
+  // Back to the first page whenever the filter changes
   createEffect(() => {
-    searchTerm();
-    activeSender();
-    sortBy();
-    sortOrder();
-    setCurrentPage(1);
+    search();
+    sort();
+    active();
+    setShown(PAGE);
   });
 
-  function cleanSenderField(senderRaw: any): string {
-    // checks if there is any "" in the beginign and end and remove them. 
-    const regex = /^[^"\r\n]*"|"[^"\r\n]*$/g;
-    senderRaw = senderRaw.replace(regex, '');
-
-
-    if (!senderRaw) return "daily.dev";
-
-    if (typeof senderRaw === "object") {
-      return senderRaw.name || senderRaw.address || "daily.dev";
-    }
-
-    const str = String(senderRaw).trim();
-
-    if (!str.startsWith("{") && !str.startsWith('"{')) {
-      if (str.includes("informer@daily.dev")) return "daily.dev";
-      return str;
-    }
-
-    try {
-      const parsed = JSON.parse(str);
-      if (typeof parsed === "object" && parsed !== null) {
-        return parsed.name || parsed.address || "daily.dev";
-      }
-
-      if (typeof parsed === "string") {
-        const doubleParsed = JSON.parse(parsed);
-        return doubleParsed.name || doubleParsed.address || "daily.dev";
-      }
-    } catch (e) {
-      const nameMatch = str.match(/"name"\s*:\s*"([^"]+)"/);
-      if (nameMatch) return nameMatch[1];
-
-      const addressMatch = str.match(/"address"\s*:\s*"([^"]+)"/);
-      if (addressMatch && addressMatch[1].includes("daily.dev")) return "daily.dev";
-    }
-
-    return "daily.dev";
-  }
-
-  onMount(async () => {
-    try {
-      const limit = 100;
-      const offset = 0;
-      const url = `https://jarllindquist.com/n8n/webhook/043557d6-47e3-4f61-94f2-11ffcf2c8fa9/news/all/${limit}/${offset}`;
-      const res = await fetch(url);
-
-      // LOGGA STATUSKODEN - hantera detta till vår logg funktion senare i så fall.
-      // console.log("Statuskod:", res.status);
-
-      // Läs som text istället för JSON först
-      const rawText = await res.text();
-
-      if (!res.ok) throw new Error(`Serverfel: ${res.status}`);
-      if (!rawText.trim()) throw new Error("Servern svarade med tom kropp");
-
-      const data = JSON.parse(rawText);
-      const cleanArticles = data.map((article: any) => ({
-        ...article,
-        sender: cleanSenderField(article.sender)
-      }));
-      setArticles(cleanArticles);
-    } catch (error) {
-      console.error("Kunde inte hämta nyheter:", error);
-    }
+  const sources = createMemo(() => {
+    const counts = new Map<string, number>();
+    for (const a of list()) counts.set(a.source, (counts.get(a.source) ?? 0) + 1);
+    // Fixed order from SOURCES, so a source keeps its place and colour when others disappear
+    const known = SOURCES.filter((s) => counts.has(s.key)).map((s) => ({
+      key: s.key,
+      label: s.label,
+      count: counts.get(s.key) ?? 0,
+    }));
+    const other = counts.get("other");
+    return other ? [...known, { key: "other", label: sourceByKey("other").label, count: other }] : known;
   });
 
-  const filteredArticles = createMemo(() => {
-    return articles()
-      .filter(article => {
-        // Behåll filtreringen (sök och sender-filter)
-        if (activeSender() !== "Alla" && article.sender !== activeSender()) return false;
-
-        if (searchTerm()) {
-          const search = searchTerm().toLowerCase();
-          return (
-            article.title?.toLowerCase().includes(search) ||
-            article.summary?.toLowerCase().includes(search) ||
-            article.author?.toLowerCase().includes(search)
-          );
-        }
-        return true;
-      });
-    // TA BORT .sort(...) HÄR! 
-    // Låt SQL-frågan stå för ordningen.
+  const filtered = createMemo(() => {
+    const q = search().trim();
+    const rows = list().filter((a) => (active() === "all" || a.source === active()) && matches(a, q));
+    const time = (a: Article) => a.date?.getTime() ?? 0;
+    if (sort() === "title") return rows.sort((x, y) => collator.compare(x.title, y.title));
+    if (sort() === "oldest") return rows.sort((x, y) => time(x) - time(y));
+    return rows.sort((x, y) => time(y) - time(x));
   });
 
-  const paginatedArticles = createMemo(() => {
-    const start = (currentPage() - 1) * itemsPerPage;
-    return filteredArticles().slice(start, start + itemsPerPage);
-  });
-
-  const totalPages = createMemo(() => Math.ceil(filteredArticles().length / itemsPerPage));
-
-  const senders = createMemo(() => ["Alla", ...new Set(articles().map(a => a.sender))]);
+  const clearFilters = () => {
+    setSearch("");
+    setActive("all");
+  };
 
   return (
-    <div class="min-h-screen bg-slate-50 text-slate-900">
-      <header class="bg-white border-b border-slate-200 py-4 px-8 sticky top-0 z-10 shadow-sm">
-        <h1 class="text-xl font-bold tracking-tight text-slate-800">📰 NewsHub Reader</h1>
+    <div class="page">
+      <header class="masthead">
+        <div>
+          <h1>NewsHub</h1>
+          <p class="tagline">Utvecklarnyhetsbrev, sammanfattade av en lokal AI-modell.</p>
+        </div>
+        <ThemeToggle />
       </header>
 
-      <div class="flex flex-col md:flex-row gap-8 max-w-[1600px] mx-auto p-6 md:p-8">
+      <Toolbar
+        search={search()}
+        onSearch={setSearch}
+        sort={sort()}
+        onSort={setSort}
+        sources={sources()}
+        active={active()}
+        onActive={setActive}
+        total={list().length}
+      />
 
-        {/* SIDOMENYN: Ökad från w-64 till w-80 för att förhindra krockar */}
-        <div class="w-full md:w-80 shrink-0">
-          <FilterBar
-            senders={senders()}
-            searchTerm={searchTerm()}
-            setSearchTerm={setSearchTerm}
-            activeSender={activeSender()}
-            setActiveSender={setActiveSender}
-            sortBy={sortBy()}
-            setSortBy={setSortBy}
-            sortOrder={sortOrder()}
-            setSortOrder={setSortOrder}
-          />
-        </div>
-
-        {/* HUVUDDELEN */}
-        <main class="flex-1 flex flex-col gap-6 min-w-0">
-          <div class="text-sm text-slate-500 font-medium">
-            {filteredArticles().length > 0
-              ? `Visar ${(currentPage() - 1) * itemsPerPage + 1}–${Math.min(currentPage() * itemsPerPage, filteredArticles().length)} av ${filteredArticles().length} artiklar`
-              : "Inga artiklar hittades"}
-          </div>
-
-          {/* RUTNÄT: 1 kolumn på mobil/mindre skärm, 2 på laptop (lg), 3 på stor extern skärm (xl) */}
-          <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            <For each={paginatedArticles()}>
-              {(article) => <ArticleCard article={article} />}
-            </For>
-          </div>
-
-          {/* Pagineringskontroller */}
-          <Show when={totalPages() > 1}>
-            <div class="flex items-center justify-between border-t border-slate-200 pt-6 mt-2">
-              <button
-                onClick={() => {
-                  setCurrentPage(p => Math.max(1, p - 1));
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                disabled={currentPage() === 1}
-                class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-              >
-                ← Föregående
-              </button>
-
-              <span class="text-sm font-medium text-slate-600">
-                Sida <span class="font-bold text-slate-900">{currentPage()}</span> av <span class="font-bold text-slate-900">{totalPages()}</span>
-              </span>
-
-              <button
-                onClick={() => {
-                  setCurrentPage(p => Math.min(totalPages(), p + 1));
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                disabled={currentPage() === totalPages()}
-                class="px-4 py-2 text-sm font-medium rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-              >
-                Nästa →
+      <main>
+        <Switch>
+          <Match when={articles.loading}>
+            <div class="grid" aria-busy="true" aria-label="Hämtar nyheter">
+              <For each={[1, 2, 3, 4, 5, 6]}>{() => <div class="card skeleton" />}</For>
+            </div>
+          </Match>
+          <Match when={articles.error}>
+            <div class="notice" role="alert">
+              <p>Nyheterna gick inte att hämta just nu.</p>
+              <button type="button" class="button" onClick={() => refetch()}>
+                Försök igen
               </button>
             </div>
-          </Show>
-        </main>
-      </div>
+          </Match>
+          <Match when={filtered().length === 0}>
+            <div class="notice">
+              <p>Inga artiklar matchar filtret.</p>
+              <button type="button" class="button" onClick={clearFilters}>
+                Rensa filter
+              </button>
+            </div>
+          </Match>
+          <Match when={true}>
+            <p class="result-count" aria-live="polite">
+              Visar {Math.min(shown(), filtered().length)} av {filtered().length} artiklar
+            </p>
+            <div class="grid">
+              <For each={filtered().slice(0, shown())}>{(a) => <ArticleCard article={a} />}</For>
+            </div>
+            <Show when={shown() < filtered().length}>
+              <div class="more">
+                <button type="button" class="button" onClick={() => setShown(shown() + PAGE)}>
+                  Visa fler
+                </button>
+              </div>
+            </Show>
+          </Match>
+        </Switch>
+      </main>
+
+      <footer class="page-footer">
+        <p>Hämtas från Gmail med n8n, sammanfattas med Ollama och sparas i Postgres. De senaste 50 utskicken visas.</p>
+      </footer>
     </div>
   );
 }
-
-export default App;
