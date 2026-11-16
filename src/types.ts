@@ -10,6 +10,7 @@ export interface ApiArticle {
   created_at?: string;
   sent_at?: string;
   displayDate?: string;
+  source_key?: string; // key in newsletter_sources; the same keys as SOURCES in sources.ts
 }
 
 // What the page works with after normalising the API row

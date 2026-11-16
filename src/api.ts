@@ -1,5 +1,5 @@
 import type { ApiArticle, Article } from "./types";
-import { sourceFor } from "./sources";
+import { sourceForRow } from "./sources";
 
 // The endpoint caps limit at 50. VITE_NEWS_URL lets a local build read a saved copy instead.
 const NEWS_URL =
@@ -38,7 +38,7 @@ function safeUrl(url: string | undefined): string | null {
 }
 
 export function normalise(row: ApiArticle): Article {
-  const source = sourceFor(row.sender || row.author);
+  const source = sourceForRow(row.source_key, row.sender || row.author);
   const { points, text } = splitSummary(row.summary);
   return {
     id: row.id,

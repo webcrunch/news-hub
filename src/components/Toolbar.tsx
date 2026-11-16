@@ -26,7 +26,7 @@ const Toolbar: Component<Props> = (props) => (
         </svg>
         <input
           type="search"
-          placeholder="Sök i rubriker och sammanfattningar"
+          placeholder="Sök i nyheterna"
           value={props.search}
           onInput={(e) => props.onSearch(e.currentTarget.value)}
         />
