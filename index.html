@@ -1,11 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="sv">
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/fav-news.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>news-hub</title>
+  <title>NewsHub</title>
+  <meta name="description" content="Utvecklarnyhetsbrev från daily.dev, TLDR och fler, sammanfattade av en lokal AI-modell." />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#131412" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" type="image/svg+xml" href="/fav-news.svg" />
+  <script>
+    // Set the saved theme before first paint, so the page does not flash light then dark
+    try {
+      var t = localStorage.getItem("newshub-theme");
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
 </head>
 
 <body>

@@ -1,73 +1,67 @@
+import { For, Show, createSignal } from "solid-js";
 import type { Component } from "solid-js";
 import type { Article } from "../types";
-import { getBadgeColor } from "../../utils/badgeUtils";
-interface ArticleCardProps {
-    article: Article;
-}
+import { sourceByKey } from "../sources";
 
-const ArticleCard: Component<ArticleCardProps> = (props) => {
-    const getSummaryPoints = (summaryText: string): string[] => {
-        if (!summaryText) return [];
-        return summaryText
-            .split("\n")
-            .map(point => point.replace(/^[\s•*]+/, "").trim())
-            .filter(point => point.length > 0);
-    };
+const dateFormat = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", year: "numeric" });
 
+// Long summaries are folded after this many points or characters
+const MAX_POINTS = 4;
+const MAX_CHARS = 320;
 
+const ArticleCard: Component<{ article: Article }> = (props) => {
+  const [open, setOpen] = createSignal(false);
+  const a = () => props.article;
+  const long = () => a().summaryPoints.length > MAX_POINTS || a().summaryText.length > MAX_CHARS;
+  const points = () => (open() ? a().summaryPoints : a().summaryPoints.slice(0, MAX_POINTS));
+  const text = () =>
+    open() || a().summaryText.length <= MAX_CHARS
+      ? a().summaryText
+      : a().summaryText.slice(0, MAX_CHARS).replace(/\s+\S*$/, "") + "…";
 
-    return (
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow duration-200 flex flex-col justify-between h-full">
-            <div>
-                <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
-                    <div class="flex items-center gap-3">
-                        {/* <span class="text-sm text-slate-500 font-medium">
-                            {props.article.author || "Okänd"}
-                        </span> */}
-                        <span class={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getBadgeColor(props.article.sender || "Okänd")}`}>
-                            {props.article.sender.split('<')[0] || "Okänd"}
+  return (
+    <article class="card">
+      <header class="card-meta">
+        <span class="source">
+          <span class="dot" style={{ background: sourceByKey(a().source).hue }} aria-hidden="true" />
+          {a().sourceLabel}
+        </span>
+        <Show when={a().date}>
+          {(d) => <time datetime={d().toISOString()}>{dateFormat.format(d())}</time>}
+        </Show>
+      </header>
 
-                        </span>
+      <h2 class="card-title">{a().title}</h2>
 
-                    </div>
-                    <span class="text-xs text-slate-400">
+      <Show
+        when={a().summaryPoints.length || a().summaryText}
+        fallback={<p class="summary empty">Ingen sammanfattning för det här utskicket.</p>}
+      >
+        <Show when={a().summaryPoints.length} fallback={<p class="summary">{text()}</p>}>
+          <ul class="summary points">
+            <For each={points()}>{(p) => <li>{p}</li>}</For>
+          </ul>
+        </Show>
+      </Show>
 
-                        {new Date(props.article.sent_at || props.article.created_at).toLocaleDateString('sv-SE')}
-                    </span>                </div>
-
-                <div class="article-card mb-4">
-                    <h2 style="color: #000000;" class="text-lg font-bold mb-2 leading-tight tracking-tight">
-                        {props.article.title}
-                    </h2>
-                    <br />
-                    <br />
-                    <span class="date block text-xs text-slate-400 mb-2">{props.article.displayDate}</span>
-                    <p class="text-sm text-slate-600 mb-3">{props.article.summary}</p>
-                </div>
-
-                <ul class="space-y-1.5 mb-6">
-                    {getSummaryPoints(props.article.summary).map((point) => (
-                        <li class="text-sm text-slate-600 flex items-start gap-2 leading-relaxed">
-                            <span class="text-blue-500 select-none mt-1 text-xs">◆</span>
-                            <span>{point}</span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
-
-            <div class="flex justify-end pt-4 border-t border-slate-100 mt-auto">
-                <a
-                    href={props.article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors gap-1 group"
-                >
-                    Läs artikel
-                    <span class="transform group-hover:translate-x-0.5 transition-transform">→</span>
-                </a>
-            </div>
-        </div>
-    );
+      <Show when={long() || a().url}>
+        <footer class="card-actions">
+          <Show when={long()}>
+            <button type="button" class="link-button" aria-expanded={open()} onClick={() => setOpen(!open())}>
+              {open() ? "Visa mindre" : "Visa mer"}
+            </button>
+          </Show>
+          <Show when={a().url}>
+            {(url) => (
+              <a class="read" href={url()} target="_blank" rel="noopener noreferrer">
+                Läs artikel <span aria-hidden="true">→</span>
+              </a>
+            )}
+          </Show>
+        </footer>
+      </Show>
+    </article>
+  );
 };
 
 export default ArticleCard;
