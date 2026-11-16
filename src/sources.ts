@@ -14,6 +14,7 @@ export const SOURCES: Source[] = [
   { key: "bruno", label: "Bruno Souza", match: /bruno/i, hue: "var(--src-4)" },
   { key: "greg", label: "Greg Sidelnikov", match: /sidelnikov/i, hue: "var(--src-5)" },
   { key: "piotr", label: "Piotr's TechBlog", match: /piotr/i, hue: "var(--src-6)" },
+  { key: "csharp", label: "C# Digest", match: /c#|csharp/i, hue: "var(--src-other)" },
 ];
 
 const OTHER: Source = { key: "other", label: "Övrigt", match: /$^/, hue: "var(--src-other)" };
@@ -21,6 +22,12 @@ const OTHER: Source = { key: "other", label: "Övrigt", match: /$^/, hue: "var(-
 export function sourceFor(sender: string | undefined): Source {
   const raw = sender ?? "";
   return SOURCES.find((s) => s.match.test(raw)) ?? OTHER;
+}
+
+// The endpoint sends the source key from the database; the sender text is only a fallback.
+export function sourceForRow(sourceKey: string | undefined, sender: string | undefined): Source {
+  const byKey = sourceKey ? SOURCES.find((s) => s.key === sourceKey) : undefined;
+  return byKey ?? sourceFor(sender);
 }
 
 export function sourceByKey(key: string): Source {
