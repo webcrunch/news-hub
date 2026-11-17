@@ -4,6 +4,7 @@ export interface ApiArticle {
   title?: string;
   author?: string;
   summary?: string;
+  summary_long?: string | null; // the fuller version for the reading view (newer mails only)
   category?: string;
   sender?: string;
   url?: string;
@@ -23,6 +24,9 @@ export interface Article {
   sourceLabel: string;
   summaryPoints: string[]; // the summary as bullet points, if it is a list
   summaryText: string; // the summary as one paragraph, if it is not a list
+  // The fuller version for the reading view; both empty when the mail has none
+  longPoints: string[];
+  longParagraphs: string[];
   url: string | null;
   date: Date | null;
 }
