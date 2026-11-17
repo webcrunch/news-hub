@@ -19,6 +19,7 @@
   --src-4: #8b5cf6;
   --src-5: #dc4a4a;
   --src-6: #d14b9a;
+  --src-7: #0f8ea3;
   --src-other: #8a877f;
 
   --radius: 14px;
@@ -47,6 +48,7 @@
     --src-4: #b39bfa;
     --src-5: #f08585;
     --src-6: #ee8cc4;
+    --src-7: #5ccbe0;
     --src-other: #9a978f;
     color-scheme: dark;
   }
@@ -70,6 +72,7 @@
   --src-4: #b39bfa;
   --src-5: #f08585;
   --src-6: #ee8cc4;
+  --src-7: #5ccbe0;
   --src-other: #9a978f;
   color-scheme: dark;
 }

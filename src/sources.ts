@@ -15,6 +15,7 @@ export const SOURCES: Source[] = [
   { key: "greg", label: "Greg Sidelnikov", match: /sidelnikov/i, hue: "var(--src-5)" },
   { key: "piotr", label: "Piotr's TechBlog", match: /piotr/i, hue: "var(--src-6)" },
   { key: "csharp", label: "C# Digest", match: /c#|csharp/i, hue: "var(--src-other)" },
+  { key: "bytebytego", label: "ByteByteGo", match: /bytebytego/i, hue: "var(--src-7)" },
 ];
 
 const OTHER: Source = { key: "other", label: "Övrigt", match: /$^/, hue: "var(--src-other)" };
