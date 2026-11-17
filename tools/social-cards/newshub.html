@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>NewsHub card</title>
+  <link rel="stylesheet" href="card.css" />
+</head>
+
+<body>
+  <div class="card">
+    <!-- The page in small: teaser cards with a source dot, a headline and lines, one of them opened -->
+    <div class="picture">
+      <svg viewBox="0 0 410 340" aria-hidden="true" font-family="Segoe UI, Arial, sans-serif">
+        <g fill="#1e293b" stroke="#334155" stroke-width="2">
+          <rect x="1" y="1" width="196" height="150" rx="14" />
+          <rect x="213" y="1" width="196" height="150" rx="14" />
+          <rect x="1" y="167" width="196" height="150" rx="14" />
+        </g>
+        <!-- source dots in the page's source colours -->
+        <circle cx="22" cy="24" r="7" fill="#f2a54a" />
+        <circle cx="234" cy="24" r="7" fill="#7ea2f0" />
+        <circle cx="22" cy="190" r="7" fill="#b39bfa" />
+        <g fill="#94a3b8" font-size="15" font-weight="600">
+          <text x="36" y="29">TLDR</text>
+          <text x="248" y="29">daily.dev</text>
+          <text x="36" y="195">Bruno Souza</text>
+        </g>
+        <!-- headlines -->
+        <g fill="#e2e8f0">
+          <rect x="16" y="46" width="160" height="12" rx="6" />
+          <rect x="16" y="64" width="110" height="12" rx="6" />
+          <rect x="228" y="46" width="150" height="12" rx="6" />
+          <rect x="228" y="64" width="160" height="12" rx="6" />
+          <rect x="16" y="212" width="150" height="12" rx="6" />
+        </g>
+        <!-- text lines -->
+        <g fill="#475569">
+          <rect x="16" y="90" width="166" height="7" rx="3.5" />
+          <rect x="16" y="104" width="140" height="7" rx="3.5" />
+          <rect x="228" y="90" width="166" height="7" rx="3.5" />
+          <rect x="228" y="104" width="120" height="7" rx="3.5" />
+          <rect x="16" y="238" width="166" height="7" rx="3.5" />
+          <rect x="16" y="252" width="130" height="7" rx="3.5" />
+        </g>
+        <g fill="#5eead4" font-size="15" font-weight="700">
+          <text x="16" y="136">Läs mer →</text>
+          <text x="228" y="136">Läs mer →</text>
+          <text x="16" y="302">Läs mer →</text>
+        </g>
+        <!-- the reading view, opened over the fourth card -->
+        <rect x="213" y="167" width="196" height="172" rx="14" fill="#0f172a" stroke="#5eead4" stroke-width="3" />
+        <rect x="229" y="186" width="140" height="13" rx="6.5" fill="#f1f5f9" />
+        <g fill="#64748b">
+          <rect x="229" y="212" width="164" height="7" rx="3.5" />
+          <rect x="229" y="226" width="164" height="7" rx="3.5" />
+          <rect x="229" y="240" width="150" height="7" rx="3.5" />
+          <rect x="229" y="260" width="164" height="7" rx="3.5" />
+          <rect x="229" y="274" width="120" height="7" rx="3.5" />
+        </g>
+        <rect x="229" y="296" width="120" height="28" rx="8" fill="#2f6b58" />
+        <text x="241" y="315" fill="#ecfdf5" font-size="14" font-weight="700">Läs originalet →</text>
+      </svg>
+    </div>
+    <div class="words">
+      <h1>NEWSHUB</h1>
+      <h2>Utvecklarnyhetsbrev, sammanfattade</h2>
+      <p>Kort och lång version av varje utskick från TLDR, daily.dev, ByteByteGo och fler, skrivna av en lokal AI&#8209;modell.</p>
+      <div class="chips">
+        <span>n8n</span>
+        <span>Ollama</span>
+        <span>PostgreSQL</span>
+        <span>SolidJS</span>
+      </div>
+      <div class="site">
+        <img src="../../public/favicon.svg" width="40" height="40" alt="" />
+        jarllindquist.com/news
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
