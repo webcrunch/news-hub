@@ -5,11 +5,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NewsHub</title>
-  <meta name="description" content="Utvecklarnyhetsbrev från daily.dev, TLDR och fler, sammanfattade av en lokal AI-modell." />
+  <meta name="description" content="Utvecklarnyhetsbrev från TLDR, daily.dev, ByteByteGo och fler, sammanfattade av en lokal AI-modell." />
   <meta name="color-scheme" content="light dark" />
   <meta name="theme-color" content="#f6f5f1" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#131412" media="(prefers-color-scheme: dark)" />
-  <link rel="icon" type="image/svg+xml" href="/fav-news.svg" />
+
+  <!-- Icons (PNGs rendered from favicon.svg by tools/social-cards/render.mjs) -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <!-- Link-preview card (Open Graph / Twitter). Absolute URLs: link previews do not resolve relative ones. -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="NewsHub" />
+  <meta property="og:locale" content="sv_SE" />
+  <meta property="og:url" content="https://jarllindquist.com/news/" />
+  <meta property="og:title" content="NewsHub: utvecklarnyhetsbrev, sammanfattade" />
+  <meta property="og:description" content="Kort och lång version av varje utskick från TLDR, daily.dev, ByteByteGo och fler, skrivna av en lokal AI-modell." />
+  <meta property="og:image" content="https://jarllindquist.com/news/og-newshub.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="NewsHub: utvecklarnyhetsbrev, sammanfattade" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="NewsHub: utvecklarnyhetsbrev, sammanfattade" />
+  <meta name="twitter:description" content="Kort och lång version av varje utskick från TLDR, daily.dev, ByteByteGo och fler, skrivna av en lokal AI-modell." />
+  <meta name="twitter:image" content="https://jarllindquist.com/news/og-newshub.png" />
   <script>
     // Set the saved theme before first paint, so the page does not flash light then dark
     try {
