@@ -1,47 +1,30 @@
-import { For, Show, createSignal } from "solid-js";
+import { For, Show } from "solid-js";
 import type { Component } from "solid-js";
 import type { Article } from "../types";
 import { sourceByKey } from "../sources";
+import { dateFormat } from "./format";
 
-const dateFormat = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", year: "numeric" });
-
-// Long summaries are folded after this many points or characters
-const MAX_POINTS = 4;
+// Long prose (daily.dev's own summaries) is cut here; the rest is in the reading view
 const MAX_CHARS = 320;
 
-interface Props {
-  article: Article;
-  // Compact: the overview row at the top. Shorter summary, and a link to the source's list.
-  compact?: boolean;
-  onShowSource?: (key: string) => void;
-}
-
-const ArticleCard: Component<Props> = (props) => {
-  const [open, setOpen] = createSignal(false);
+// A card in "Alla nyheter": the short summary in full, "Läs mer" opens the reading view.
+const ArticleCard: Component<{ article: Article; onOpen: (a: Article) => void }> = (props) => {
   const a = () => props.article;
-  const maxPoints = () => (props.compact ? 2 : MAX_POINTS);
-  const maxChars = () => (props.compact ? 160 : MAX_CHARS);
-  const long = () =>
-    !props.compact && (a().summaryPoints.length > maxPoints() || a().summaryText.length > maxChars());
-  const points = () => (open() ? a().summaryPoints : a().summaryPoints.slice(0, maxPoints()));
-  const text = () =>
-    open() || a().summaryText.length <= maxChars()
-      ? a().summaryText
-      : a().summaryText.slice(0, maxChars()).replace(/\s+\S*$/, "") + "…";
+  const cut = () => a().summaryText.length > MAX_CHARS;
+  const text = () => (cut() ? a().summaryText.slice(0, MAX_CHARS).replace(/\s+\S*$/, "") + "…" : a().summaryText);
+  const more = () => cut() || a().longParagraphs.length > 0 || a().longPoints.length > 0;
 
   return (
-    <article class="card" classList={{ compact: !!props.compact }}>
+    <article class="card">
       <header class="card-meta">
         <span class="source">
           <span class="dot" style={{ background: sourceByKey(a().source).hue }} aria-hidden="true" />
           {a().sourceLabel}
         </span>
-        <Show when={a().date}>
-          {(d) => <time datetime={d().toISOString()}>{dateFormat.format(d())}</time>}
-        </Show>
+        <Show when={a().date}>{(d) => <time datetime={d().toISOString()}>{dateFormat.format(d())}</time>}</Show>
       </header>
 
-      <h2 class="card-title">{a().title}</h2>
+      <h3 class="card-title">{a().title}</h3>
 
       <Show
         when={a().summaryPoints.length || a().summaryText}
@@ -49,23 +32,16 @@ const ArticleCard: Component<Props> = (props) => {
       >
         <Show when={a().summaryPoints.length} fallback={<p class="summary">{text()}</p>}>
           <ul class="summary points">
-            <For each={points()}>{(p) => <li>{p}</li>}</For>
+            <For each={a().summaryPoints}>{(p) => <li>{p}</li>}</For>
           </ul>
         </Show>
       </Show>
 
-      <Show when={long() || a().url || props.onShowSource}>
+      <Show when={more() || a().url}>
         <footer class="card-actions">
-          <Show when={props.onShowSource}>
-            {(show) => (
-              <button type="button" class="link-button" onClick={() => show()(a().source)}>
-                Fler från {a().sourceLabel}
-              </button>
-            )}
-          </Show>
-          <Show when={long()}>
-            <button type="button" class="link-button" aria-expanded={open()} onClick={() => setOpen(!open())}>
-              {open() ? "Visa mindre" : "Visa mer"}
+          <Show when={more()}>
+            <button type="button" class="link-button" onClick={() => props.onOpen(a())}>
+              Läs mer
             </button>
           </Show>
           <Show when={a().url}>

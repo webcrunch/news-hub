@@ -340,9 +340,10 @@ main {
 
 .card-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
   margin-top: 4px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
@@ -363,6 +364,7 @@ main {
 
 .read {
   margin-left: auto;
+  white-space: nowrap;
   color: var(--accent);
   font-weight: 600;
   font-size: 0.9rem;
@@ -441,35 +443,149 @@ main {
   align-items: stretch;
 }
 
-.card.compact {
-  padding: 16px;
+/* Overview cards: a headline and one sentence; the whole card opens the reading view */
+.card.teaser {
+  position: relative;
+  padding: 18px;
+  transition: border-color 120ms ease, transform 120ms ease;
 }
 
-.card.compact .card-title {
-  font-size: 1.05rem;
+.card.teaser:hover {
+  border-color: var(--muted);
 }
 
-.card.compact .card-actions {
+.card.teaser:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.card.teaser .card-title {
+  font-size: 1.08rem;
+}
+
+/* The title button stretches over the whole card, so the card is one click target */
+.stretch {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stretch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.stretch:focus-visible {
+  outline: none;
+}
+
+.teaser-more {
   margin-top: auto;
+  padding-top: 4px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-/* The overview only teases: at most three lines per point, four for prose */
-.card.compact .points li,
-.card.compact p.summary {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+.card.teaser.skeleton {
+  min-height: 170px;
+}
+
+/* Reading view */
+.reader {
+  width: min(680px, calc(100% - 32px));
+  max-height: min(86vh, 900px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.25);
+}
+
+.reader::backdrop {
+  background: rgb(15 15 12 / 0.55);
+}
+
+body:has(.reader[open]) {
   overflow: hidden;
 }
 
-.card.compact p.summary {
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+.reader-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 28px 26px;
 }
 
-.card.compact.skeleton {
-  min-height: 180px;
+.reader-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.reader-head .source {
+  gap: 8px;
+}
+
+.reader-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.reader-body {
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+.reader-body p {
+  margin: 0 0 1em;
+}
+
+.reader-body .points {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Stays at the bottom of the panel while a long summary scrolls */
+.reader-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -28px -26px;
+  padding: 14px 28px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.button.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  text-decoration: none;
+}
+
+.button.primary:hover {
+  filter: brightness(1.08);
 }
 
 .more {
@@ -535,6 +651,30 @@ main {
 
   .latest-row > * {
     scroll-snap-align: start;
+  }
+
+  /* The reading view becomes a sheet from the bottom */
+  .reader {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    margin: auto 0 0;
+    border-bottom: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .reader-inner {
+    padding: 16px 18px 24px;
+  }
+
+  .reader-actions {
+    margin: 0 -18px -24px;
+    padding: 12px 18px 18px;
+  }
+
+  .reader-actions .button {
+    flex: 1 1 auto;
+    justify-content: center;
   }
 
   .chips {

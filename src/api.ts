@@ -27,6 +27,16 @@ function splitSummary(summary: string | undefined): { points: string[]; text: st
   return { points: [], text: lines.join(" ") };
 }
 
+// The long version is either "- point" lines or paragraphs separated by blank lines.
+function splitLong(summary: string | null | undefined): { points: string[]; paragraphs: string[] } {
+  const clean = (summary ?? "").trim();
+  if (!clean) return { points: [], paragraphs: [] };
+  const { points } = splitSummary(clean);
+  if (points.length) return { points, paragraphs: [] };
+  const paragraphs = clean.split(/\n\s*\n/).map((p) => p.replace(/\s*\n\s*/g, " ").trim()).filter(Boolean);
+  return { points: [], paragraphs };
+}
+
 function safeUrl(url: string | undefined): string | null {
   if (!url) return null;
   try {
@@ -40,7 +50,10 @@ function safeUrl(url: string | undefined): string | null {
 export function normalise(row: ApiArticle): Article {
   const source = sourceForRow(row.source_key, row.sender || row.author);
   const { points, text } = splitSummary(row.summary);
+  const long = splitLong(row.summary_long);
   return {
+    longPoints: long.points,
+    longParagraphs: long.paragraphs,
     id: row.id,
     title: (row.title ?? "").trim() || "Utan rubrik",
     source: source.key,

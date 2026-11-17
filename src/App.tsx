@@ -1,5 +1,7 @@
 import { For, Match, Show, Switch, createEffect, createMemo, createResource, createSignal, on, onCleanup } from "solid-js";
 import ArticleCard from "./components/ArticleCard";
+import Reader from "./components/Reader";
+import Teaser from "./components/Teaser";
 import Toolbar from "./components/Toolbar";
 import ThemeToggle from "./components/ThemeToggle";
 import { fetchFeed, fetchLatest } from "./api";
@@ -22,6 +24,7 @@ export default function App() {
   const [total, setTotal] = createSignal(0);
   const [loading, setLoading] = createSignal(true);
   const [failed, setFailed] = createSignal(false);
+  const [reading, setReading] = createSignal<Article | null>(null); // the article in the reading view
   let request = 0; // only the newest request may write the list
   let feedTop: HTMLElement | undefined;
 
@@ -61,6 +64,7 @@ export default function App() {
   const allCount = () => sources().reduce((n, s) => n + s.count, 0);
 
   const showSource = (key: string) => {
+    setReading(null);
     setSearch("");
     setQuery("");
     setActive(key);
@@ -91,7 +95,7 @@ export default function App() {
           <Switch>
             <Match when={latest.loading}>
               <div class="latest-row" aria-busy="true" aria-label="Hämtar senaste">
-                <For each={[1, 2, 3, 4]}>{() => <div class="card compact skeleton" />}</For>
+                <For each={[1, 2, 3, 4]}>{() => <div class="card teaser skeleton" />}</For>
               </div>
             </Match>
             <Match when={latest.error}>
@@ -104,7 +108,7 @@ export default function App() {
             </Match>
             <Match when={true}>
               <div class="latest-row">
-                <For each={latestList()}>{(a) => <ArticleCard article={a} compact onShowSource={showSource} />}</For>
+                <For each={latestList()}>{(a) => <Teaser article={a} onOpen={setReading} />}</For>
               </div>
             </Match>
           </Switch>
@@ -150,7 +154,7 @@ export default function App() {
                 Visar {items().length} av {total()} artiklar
               </p>
               <div class="grid">
-                <For each={items()}>{(a) => <ArticleCard article={a} />}</For>
+                <For each={items()}>{(a) => <ArticleCard article={a} onOpen={setReading} />}</For>
               </div>
               <Show when={items().length < total() || failed()}>
                 <div class="more">
@@ -168,6 +172,8 @@ export default function App() {
           </Switch>
         </section>
       </main>
+
+      <Reader article={reading()} onClose={() => setReading(null)} onShowSource={showSource} />
 
       <footer class="page-footer">
         <p>Hämtas från Gmail med n8n, sammanfattas med Ollama och sparas i Postgres.</p>
