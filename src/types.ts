@@ -11,6 +11,8 @@ export interface ApiArticle {
   sent_at?: string;
   displayDate?: string;
   source_key?: string; // key in newsletter_sources; the same keys as SOURCES in sources.ts
+  total?: string | number; // /news/feed: rows matching the filter
+  source_total?: string | number; // /news/latest: mails of this source
 }
 
 // What the page works with after normalising the API row
