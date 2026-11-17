@@ -1,10 +1,10 @@
 import type { ApiArticle, Article } from "./types";
 import { sourceForRow } from "./sources";
 
-// The endpoint caps limit at 50. VITE_NEWS_URL lets a local build read a saved copy instead.
-const NEWS_URL =
-  import.meta.env.VITE_NEWS_URL ??
-  "https://jarllindquist.com/n8n/webhook/043557d6-47e3-4f61-94f2-11ffcf2c8fa9/news/all/50/0";
+// n8n webhooks. VITE_NEWS_API lets a local build point somewhere else.
+const API = import.meta.env.VITE_NEWS_API ?? "https://jarllindquist.com/n8n/webhook";
+const LATEST_URL = `${API}/news/latest`;
+const FEED_URL = `${API}/043557d6-47e3-4f61-94f2-11ffcf2c8fa9/news/feed`;
 
 const EMPTY_SUMMARIES = new Set(["", "ingen beskrivning.", "sammanfattning saknas"]);
 
@@ -52,12 +52,44 @@ export function normalise(row: ApiArticle): Article {
   };
 }
 
-export async function fetchArticles(signal?: AbortSignal): Promise<Article[]> {
-  const res = await fetch(NEWS_URL, { signal });
+// The endpoints answer [] , [{ success: true }] (no rows) or a list of rows.
+async function getRows(url: string, signal?: AbortSignal): Promise<ApiArticle[]> {
+  const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`Servern svarade ${res.status}`);
   const body = await res.text();
   if (!body.trim()) return [];
   const rows = JSON.parse(body);
   if (!Array.isArray(rows)) throw new Error("Oväntat svar från servern");
-  return rows.map(normalise);
+  return rows.filter((r) => r && typeof r.id === "number");
+}
+
+export interface Latest {
+  articles: Article[]; // the newest mail of each source
+  counts: Map<string, number>; // how many mails each source has
+}
+
+export async function fetchLatest(signal?: AbortSignal): Promise<Latest> {
+  const rows = await getRows(LATEST_URL, signal);
+  const counts = new Map<string, number>();
+  const articles = rows.map((row) => {
+    const a = normalise(row);
+    counts.set(a.source, (counts.get(a.source) ?? 0) + (Number(row.source_total) || 0));
+    return a;
+  });
+  return { articles, counts };
+}
+
+export interface FeedPage {
+  articles: Article[];
+  total: number; // all rows that match, not just this page
+}
+
+export async function fetchFeed(
+  opts: { source: string; query: string; offset: number; limit: number },
+  signal?: AbortSignal,
+): Promise<FeedPage> {
+  const source = encodeURIComponent(opts.source || "all");
+  const q = opts.query.trim() ? `?q=${encodeURIComponent(opts.query.trim())}` : "";
+  const rows = await getRows(`${FEED_URL}/${source}/${opts.limit}/${opts.offset}${q}`, signal);
+  return { articles: rows.map(normalise), total: rows.length ? Number(rows[0].total) || rows.length : 0 };
 }

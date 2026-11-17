@@ -9,18 +9,28 @@ const dateFormat = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "sh
 const MAX_POINTS = 4;
 const MAX_CHARS = 320;
 
-const ArticleCard: Component<{ article: Article }> = (props) => {
+interface Props {
+  article: Article;
+  // Compact: the overview row at the top. Shorter summary, and a link to the source's list.
+  compact?: boolean;
+  onShowSource?: (key: string) => void;
+}
+
+const ArticleCard: Component<Props> = (props) => {
   const [open, setOpen] = createSignal(false);
   const a = () => props.article;
-  const long = () => a().summaryPoints.length > MAX_POINTS || a().summaryText.length > MAX_CHARS;
-  const points = () => (open() ? a().summaryPoints : a().summaryPoints.slice(0, MAX_POINTS));
+  const maxPoints = () => (props.compact ? 2 : MAX_POINTS);
+  const maxChars = () => (props.compact ? 160 : MAX_CHARS);
+  const long = () =>
+    !props.compact && (a().summaryPoints.length > maxPoints() || a().summaryText.length > maxChars());
+  const points = () => (open() ? a().summaryPoints : a().summaryPoints.slice(0, maxPoints()));
   const text = () =>
-    open() || a().summaryText.length <= MAX_CHARS
+    open() || a().summaryText.length <= maxChars()
       ? a().summaryText
-      : a().summaryText.slice(0, MAX_CHARS).replace(/\s+\S*$/, "") + "…";
+      : a().summaryText.slice(0, maxChars()).replace(/\s+\S*$/, "") + "…";
 
   return (
-    <article class="card">
+    <article class="card" classList={{ compact: !!props.compact }}>
       <header class="card-meta">
         <span class="source">
           <span class="dot" style={{ background: sourceByKey(a().source).hue }} aria-hidden="true" />
@@ -44,8 +54,15 @@ const ArticleCard: Component<{ article: Article }> = (props) => {
         </Show>
       </Show>
 
-      <Show when={long() || a().url}>
+      <Show when={long() || a().url || props.onShowSource}>
         <footer class="card-actions">
+          <Show when={props.onShowSource}>
+            {(show) => (
+              <button type="button" class="link-button" onClick={() => show()(a().source)}>
+                Fler från {a().sourceLabel}
+              </button>
+            )}
+          </Show>
           <Show when={long()}>
             <button type="button" class="link-button" aria-expanded={open()} onClick={() => setOpen(!open())}>
               {open() ? "Visa mindre" : "Visa mer"}

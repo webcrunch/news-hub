@@ -179,13 +179,7 @@ main {
   padding: 20px 0;
 }
 
-.toolbar-row {
-  display: flex;
-  gap: 12px;
-}
-
 .search {
-  flex: 1;
   position: relative;
   display: flex;
   align-items: center;
@@ -198,8 +192,7 @@ main {
   pointer-events: none;
 }
 
-.search input,
-.sort select {
+.search input {
   width: 100%;
   height: 44px;
   border: 1px solid var(--border);
@@ -213,11 +206,6 @@ main {
 
 .search input::placeholder {
   color: var(--muted);
-}
-
-.sort select {
-  padding: 0 12px;
-  cursor: pointer;
 }
 
 .chips {
@@ -429,6 +417,61 @@ main {
   border-color: var(--muted);
 }
 
+.button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Sections: "Senaste från varje nyhetsbrev" and "Alla nyheter" */
+.section-title {
+  margin: 28px 0 14px;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.feed .toolbar {
+  padding-top: 0;
+}
+
+.latest-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.card.compact {
+  padding: 16px;
+}
+
+.card.compact .card-title {
+  font-size: 1.05rem;
+}
+
+.card.compact .card-actions {
+  margin-top: auto;
+}
+
+/* The overview only teases: at most three lines per point, four for prose */
+.card.compact .points li,
+.card.compact p.summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.card.compact p.summary {
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.card.compact.skeleton {
+  min-height: 180px;
+}
+
 .more {
   display: flex;
   justify-content: center;
@@ -473,13 +516,25 @@ main {
     padding: 14px 0;
   }
 
-  .toolbar-row {
-    gap: 8px;
+  .section-title {
+    margin: 20px 0 10px;
+    font-size: 1.15rem;
   }
 
-  .sort {
-    flex: none;
-    width: 8.5rem;
+  /* The overview is one row you swipe sideways */
+  .latest-row {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 82%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin: 0 -16px;
+    padding: 0 16px 6px;
+    scrollbar-width: none;
+  }
+
+  .latest-row > * {
+    scroll-snap-align: start;
   }
 
   .chips {
